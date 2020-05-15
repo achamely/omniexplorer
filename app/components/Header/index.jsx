@@ -8,7 +8,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
-import { routeActions } from 'redux-simple-router';
 import styled from 'styled-components';
 import SearchBox from 'components/SearchBox';
 import { ECOSYSTEM_PROD_NAME, ECOSYSTEM_TEST_NAME } from 'containers/App/constants';
@@ -45,13 +44,12 @@ class Header extends React.PureComponent {
   constructor(props) {
     super(props);
 
-    this.toggle = this.toggle.bind(this);
     this.state = {
       isOpen: false,
     };
   }
 
-  toggle(e) {
+  toggle = (e)  => {
     this.setState({
       isOpen: !this.state.isOpen,
     });
@@ -120,6 +118,12 @@ class Header extends React.PureComponent {
                     Misc
                   </DropdownToggle>
                   <DropdownMenu right>
+                    {/*<DropdownItem>*/}
+                    {/*  <NavLink href="/exchange">Exchange</NavLink>*/}
+                    {/*</DropdownItem>*/}
+                    <DropdownItem>
+                      <NavLink href="/activations">Feature Activations</NavLink>
+                    </DropdownItem>
                     <DropdownItem>
                       <NavLink href="http://www.omnilayer.org/#GetStarted" target="_blank">Wallets</NavLink>
                     </DropdownItem>
@@ -129,6 +133,9 @@ class Header extends React.PureComponent {
                     <DropdownItem>
                       <NavLink href="https://github.com/OmniLayer/omniexplorer/issues" target="_blank">Report Bug</NavLink>
                     </DropdownItem>
+                    {/*<DropdownItem>*/}
+                    {/*  <NavLink href="/analytics">Analytics</NavLink>*/}
+                    {/*</DropdownItem>*/}
                   </DropdownMenu>
                 </UncontrolledDropdown>
               </Nav>
@@ -169,7 +176,6 @@ NavbarToggler.propTypes = {
 
 function mapDispatchToProps(dispatch) {
   return {
-    changeRoute: (url) => dispatch(routeActions.push(url)),
     dispatch,
   };
 }

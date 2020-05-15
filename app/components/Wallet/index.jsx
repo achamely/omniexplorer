@@ -6,35 +6,40 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { routeActions } from 'redux-simple-router';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
+import { createStructuredSelector } from 'reselect';
 import styled from 'styled-components';
 import {
   Button,
   Collapse,
+  Container,
   Modal,
   ModalBody,
   ModalFooter,
   ModalHeader,
-  Row,
   Table,
   UncontrolledTooltip,
 } from 'reactstrap';
 import QRCode from 'qrcode.react';
-import sortBy from 'lodash/sortBy';
+import isEmpty from 'lodash/isEmpty';
+import orderBy from 'lodash/orderBy';
 import Token from 'components/Token';
+import { startFetchMany } from 'components/Token/actions';
+import {
+  makeSelectHasProperty,
+  makeSelectLastFetched,
+  makeSelectLoading,
+  makeSelectProperties,
+} from 'components/Token/selectors';
+import LoadingIndicator from 'components/LoadingIndicator';
 import { FormattedMessage } from 'react-intl';
+import InfoCircleIcon from 'components/InfoCircleIcon';
+import { Qrcode } from '@styled-icons/fa-solid/Qrcode';
+
 import walletMessages from './messages';
-import InformationIcon from 'react-icons/lib/io/informatcircled';
-import QRCodeIcon from 'react-icons/lib/fa/qrcode';
 
-const StyledInformationIcon = styled(InformationIcon)`
-  color: cadetblue !important;
-  font-size: 1.5rem;
-`;
-
-const StyledQRCodeIcon = styled(QRCodeIcon)`
+const StyledQrcode = styled(Qrcode).attrs({})`
   color: cadetblue !important;
   font-size: 1.5rem;
   width: 36px;
@@ -62,8 +67,6 @@ class Wallet extends React.PureComponent {
   constructor(props) {
     super(props);
 
-    this.toggle = this.toggle.bind(this);
-    this.toggleModal = this.toggleModal.bind(this);
     this.state = {
       collapse: false,
       flaggedMessage: `Show flagged tokens`,
@@ -71,21 +74,31 @@ class Wallet extends React.PureComponent {
     };
   }
 
-  toggle() {
+  toggle = () => {
     this.setState({ collapse: !this.state.collapse });
     this.setState({
       flaggedMessage: `${this.state.collapse ? 'Show' : 'Hide'} flagged tokens`,
     });
-  }
+  };
 
-  toggleModal() {
+  toggleModal = () => {
     this.setState({
       modal: !this.state.modal,
     });
-  }
+  };
 
   render() {
-    if (!this.props.address) return null;
+    const loading = !this.props.address || !this.props.address.balance.length;
+
+    const loadingIndicator = (
+      <Container>
+        <LoadingIndicator />
+      </Container>
+    );
+
+    if (loading || this.props.loadingTokens) {
+      return loadingIndicator;
+    }
 
     const isFlagged = propertyinfo =>
       propertyinfo.flags &&
@@ -93,18 +106,28 @@ class Wallet extends React.PureComponent {
         propertyinfo.flags.scam ||
         propertyinfo.flags.replaced);
 
-    const flaggedProps = sortBy(
-      (this.props.address.balance || []).filter(balance =>
-        isFlagged(balance.propertyinfo),
-      ),
-      'id',
+    const sortedBalances = orderBy(
+      this.props.address.balance || [],
+      ({ id }) => Number(id || 1),
+      ['asc'],
     );
 
-    const nonFlaggedProps = sortBy(
-      (this.props.address.balance || []).filter(
-        balance => !isFlagged(balance.propertyinfo),
-      ),
-      'id',
+    const needFetchTokens = sortedBalances.some(
+      b => b.propertyid && !this.props.hasPropertyFetched(b.propertyid),
+    );
+    if (
+      !isEmpty(sortedBalances) &&
+      (needFetchTokens ||
+        (!this.props.loadingTokens && !this.props.lastFetched))
+    ) {
+      this.props.getProperties(sortedBalances);
+    }
+
+    const flaggedProps = sortedBalances.filter(balance =>
+      isFlagged(balance.propertyinfo),
+    );
+    const nonFlaggedProps = sortedBalances.filter(
+      balance => !isFlagged(balance.propertyinfo),
     );
 
     const hasFlagged = !!flaggedProps.length;
@@ -125,7 +148,7 @@ class Wallet extends React.PureComponent {
                     }}
                     onClick={this.toggleModal}
                   >
-                    <StyledQRCodeIcon className="ml-1" />
+                    <StyledQrcode className="ml-1" />
                   </Button>
                   {this.props.addr}
                   <Modal
@@ -135,7 +158,7 @@ class Wallet extends React.PureComponent {
                   >
                     <ModalHeader toggle={this.toggleModal} />
                     <ModalBody className="text-center">
-                      <h3 className="text-truncate">{this.props.addr}</h3>
+                      <h4 className="text-truncate">{this.props.addr}</h4>
                       <br />
                       <QRCode value={this.props.addr} size={256} />
                     </ModalBody>
@@ -159,9 +182,17 @@ class Wallet extends React.PureComponent {
           </StyledTR>
         </thead>
         <tbody>
-          {nonFlaggedProps.map(balance => (
-            <Token {...balance} key={balance.id} />
-          ))}
+          {loading && (
+            <tr>
+              <td colSpan="5" className="text-center">
+                <LoadingIndicator />
+              </td>
+            </tr>
+          )}
+          {!loading &&
+            nonFlaggedProps.map(balance => (
+              <Token {...balance} key={balance.id} bulkLoading />
+            ))}
           <tr>
             <td colSpan="5" className="p-0 m-0 bg-white">
               <div className="text-center">
@@ -178,11 +209,7 @@ class Wallet extends React.PureComponent {
                       onClick={this.toggle}
                     >
                       {this.state.flaggedMessage}
-                      <StyledInformationIcon
-                        color="gray"
-                        className="ml-1"
-                        id="flaggedToolip"
-                      />
+                      <InfoCircleIcon id="flaggedToolip" />
                     </Button>
                     <UncontrolledTooltip
                       placement="right-end"
@@ -217,7 +244,7 @@ class Wallet extends React.PureComponent {
                   </thead>
                   <tbody>
                     {flaggedProps.map(balance => (
-                      <Token {...balance} key={balance.id} />
+                      <Token {...balance} key={balance.id} bulkLoading />
                     ))}
                   </tbody>
                 </StyledTable>
@@ -231,20 +258,26 @@ class Wallet extends React.PureComponent {
 }
 
 Wallet.propTypes = {
+  getProperties: PropTypes.func.isRequired,
   address: PropTypes.object.isRequired,
   addr: PropTypes.string.isRequired,
   extra: PropTypes.any,
 };
 
-function mapDispatchToProps(dispatch) {
-  return {
-    changeRoute: url => dispatch(routeActions.push(url)),
-    dispatch,
-  };
-}
+const mapDispatchToProps = dispatch => ({
+  getProperties: propertyId => dispatch(startFetchMany(propertyId)),
+  dispatch,
+});
+
+const mapStateToProps = createStructuredSelector({
+  tokens: makeSelectProperties(),
+  loadingTokens: makeSelectLoading(),
+  lastFetched: makeSelectLastFetched(),
+  hasPropertyFetched: makeSelectHasProperty,
+});
 
 const withConnect = connect(
-  null,
+  mapStateToProps,
   mapDispatchToProps,
 );
 

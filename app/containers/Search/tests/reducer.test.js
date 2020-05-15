@@ -1,16 +1,16 @@
-import { fromJS } from 'immutable';
 import searchReducer from '../reducer';
 
-const initialState = fromJS({
+import produce from 'immer';
+
+export const initialState = {
   loading: true,
-  error: false,
   query: '',
   address: {
     balance: [],
   },
   asset: [],
   tx: {},
-});
+};
 
 describe('searchReducer', () => {
   it('returns the initial state', () => {

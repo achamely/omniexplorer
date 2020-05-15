@@ -3,44 +3,34 @@
  * Search reducer
  *
  */
+import produce from 'immer';
+import { LOAD_SEARCH, LOAD_SEARCH_SUCCESS } from './constants';
 
-import { fromJS } from 'immutable';
-import {
-  LOAD_SEARCH,
-  LOAD_SEARCH_ERROR,
-  LOAD_SEARCH_SUCCESS,
-} from './constants';
-
-const initialState = fromJS({
+export const initialState = {
   loading: true,
-  error: false,
   query: '',
   address: {
     balance: [],
   },
   asset: [],
   tx: {},
-});
+};
 
-function searchReducer(state = initialState, action) {
-  const { error, payload, type } = action;
-
-  switch (type) {
-    case LOAD_SEARCH:
-      return state.set('loading', true).set('error', false);
-    case LOAD_SEARCH_SUCCESS:
-      return state
-        .set('error', false)
-        .set('loading', false)
-        .set('query', payload.query)
-        .set('address', payload.data.address)
-        .set('asset', payload.data.asset)
-        .set('tx', payload.data.tx);
-    case LOAD_SEARCH_ERROR:
-      return state.set('error', error).set('loading', false);
-    default:
-      return state;
-  }
-}
+/* eslint-disable default-case, no-param-reassign */
+const searchReducer = (state = initialState, { payload, type } = action) =>
+  produce(state, draft => {
+    switch (type) {
+      case LOAD_SEARCH:
+        draft.loading = true;
+        break;
+      case LOAD_SEARCH_SUCCESS:
+        draft.loading = false;
+        draft.query = payload.query;
+        draft.address = payload.data.address;
+        draft.asset = payload.data.asset;
+        draft.tx = payload.data.tx;
+        break;
+    }
+  });
 
 export default searchReducer;

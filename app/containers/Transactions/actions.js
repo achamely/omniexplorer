@@ -18,7 +18,6 @@
 import {
   LOAD_TRANSACTIONS,
   LOAD_TRANSACTIONS_SUCCESS,
-  LOAD_TRANSACTIONS_ERROR,
   SET_PAGE,
   SET_TRANSACTION_TYPE,
   LOAD_UNCONFIRMED,
@@ -43,25 +42,12 @@ export function loadTransactions(addr = null) {
  *
  * @return {object} An action object with a type of LOAD_TRANSACTIONS_SUCCESS passing the transactions
  */
-export function transactionsLoaded(transactions, pages) {
+export function transactionsLoaded(transactions, pages, addr) {
   return {
     type: LOAD_TRANSACTIONS_SUCCESS,
     transactions,
     pages,
-  };
-}
-
-/**
- * Dispatched when loading the transactions fails
- *
- * @param  {object} error The error
- *
- * @return {object} An action object with a type of LOAD_TRANSACTIONS_ERROR passing the error
- */
-export function transactionsLoadingError(error) {
-  return {
-    type: LOAD_TRANSACTIONS_ERROR,
-    error,
+    addr,
   };
 }
 
@@ -98,8 +84,9 @@ export function setTransactionType(txType) {
  *
  * @return {object} An action object with a type of LOAD_TRANSACTIONS
  */
-export function loadUnconfirmed() {
+export function loadUnconfirmed(addr = null) {
   return {
     type: LOAD_UNCONFIRMED,
+    addr,
   };
 }

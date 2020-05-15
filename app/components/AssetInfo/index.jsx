@@ -6,26 +6,31 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { compose } from 'redux';
-import { connect } from 'react-redux';
-import { routeActions } from 'redux-simple-router';
-import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import moment from 'moment/src/moment';
+import StyledA from 'components/StyledA';
+import StyledLink from 'components/StyledLink';
 
 import SanitizedFormattedNumber from 'components/SanitizedFormattedNumber';
 import { FormattedUnixDateTime } from 'components/FormattedDateTime';
-import { API_URL_BASE } from 'containers/App/constants';
+import { API_URL_BASE, FEATURE_ACTIVATION_TYPE_INT } from 'containers/App/constants';
+import normalizeURL from 'utils/normalizeURL';
+
+const StyledTD = styled.td.attrs({
+  className: 'field',
+})`
+  width: 8rem;
+`;
 
 function AssetInfo(asset) {
   const rawAssetURL = `${API_URL_BASE}/property/${asset.propertyid}`;
 
   let tokenName;
   let propertyID;
-  if (![4, -22, 25, 26].includes(asset.propertyid)) {
+  if (![4, -22, 25, 26].includes(asset.type_int)) {
     tokenName = (
       <tr>
-        <td className="field">Name</td>
+        <StyledTD>Name</StyledTD>
         <td>
           <strong>{asset.name || asset.propertyname || asset.type}</strong>
         </td>
@@ -33,17 +38,18 @@ function AssetInfo(asset) {
     );
     propertyID = (
       <tr>
-        <td className="field">PropertyID</td>
+        <StyledTD>PropertyID</StyledTD>
         <td>
           <strong>#{asset.propertyid}</strong>
         </td>
       </tr>
     );
   }
-  if (asset.propertyid === 28) {
+
+  if (asset.type_int === 28) {
     tokenName = (
       <tr>
-        <td className="field">Ecosystem</td>
+        <StyledTD>Ecosystem</StyledTD>
         <td>
           <strong>{asset.ecosystem}</strong>
         </td>
@@ -51,6 +57,16 @@ function AssetInfo(asset) {
     );
   }
 
+  if(asset.type_int === FEATURE_ACTIVATION_TYPE_INT){
+    propertyID= (
+      <tr>
+        <StyledTD>Feature Activation</StyledTD>
+        <td>
+          <strong>#{asset.name}</strong>
+        </td>
+      </tr>
+    );
+  }
   let asseturl;
   const Strike = styled.span`
     text-decoration: line-through;
@@ -64,9 +80,9 @@ function AssetInfo(asset) {
   } else if (asset.url.includes('.')) {
     asseturl = (
       <td>
-        <a href={asset.url} target="_blank">
+        <StyledA href={normalizeURL(asset.url)} target="_blank" rel="noopener noreferrer">
           {asset.url}
-        </a>
+        </StyledA>
       </td>
     );
   } else {
@@ -82,7 +98,7 @@ function AssetInfo(asset) {
     registeredMessage = (
       <td>
         This property is not registered with OmniExplorer.info. Please see{' '}
-        <a href="/promote">Promote Your Property</a> for further details.
+        <StyledA href="/promote">Promote Your Property</StyledA> for further details.
       </td>
     );
   }
@@ -91,7 +107,7 @@ function AssetInfo(asset) {
   if (asset.data) {
     assetData = (
       <tr>
-        <td className="field">Data</td>
+        <StyledTD>Data</StyledTD>
         <td>
           <span>{asset.data}</span>
         </td>
@@ -103,7 +119,7 @@ function AssetInfo(asset) {
   return (
     <tbody>
       <tr>
-        <td className="field">Total</td>
+        <StyledTD>Total</StyledTD>
         <td>
           <strong>
             <SanitizedFormattedNumber value={asset.totaltokens} /> Tokens
@@ -113,7 +129,7 @@ function AssetInfo(asset) {
       {tokenName}
       {propertyID}
       <tr>
-        <td className="field">Created</td>
+        <StyledTD>Created</StyledTD>
         <td>
           <span id="ldatetime">
             <FormattedUnixDateTime datetime={asset.blocktime} useSeconds={false} />
@@ -122,7 +138,7 @@ function AssetInfo(asset) {
       </tr>
       {asset.type_int===51 &&
         <tr>
-          <td className="field">{closingLabel}</td>
+          <StyledTD>{closingLabel}</StyledTD>
           <td>
             <span id="ldatetime">
               <FormattedUnixDateTime datetime={asset.deadline} useSeconds={false} />
@@ -132,64 +148,64 @@ function AssetInfo(asset) {
       }
       {assetData}
       <tr>
-        <td className="field">Issuer</td>
+        <StyledTD>Issuer</StyledTD>
         <td>
-          <Link
+          <StyledLink
             to={{
               pathname: `/address/${asset.issuer}`,
               state: { state: asset.state },
             }}
           >
             {asset.issuer}
-          </Link>
+          </StyledLink>
         </td>
       </tr>
       <tr>
-        <td className="field">Category</td>
+        <StyledTD>Category</StyledTD>
         <td>
           <span id="lblocknum">{asset.category}</span>
         </td>
       </tr>
       <tr>
-        <td className="field">Divisible</td>
+        <StyledTD>Divisible</StyledTD>
         <td>
           <span id="lblocknum">{asset.divisible ? 'True' : 'False'}</span>
         </td>
       </tr>
       <tr className="d-none">
-        <td className="field">Distribution</td>
+        <StyledTD>Distribution</StyledTD>
         <td>
           <span id="lblocknum">Coming soon...</span>
         </td>
       </tr>
       {asseturl && (
         <tr>
-          <td className="field">URL</td>
+          <StyledTD>URL</StyledTD>
           {asseturl}
         </tr>
       )}
       <tr className="d-none">
-        <td className="field">Price</td>
+        <StyledTD>Price</StyledTD>
         <td>
           <span id="lblocknum">Coming soon...</span>
         </td>
       </tr>
       <tr className="d-none">
-        <td className="field">Markets</td>
+        <StyledTD>Markets</StyledTD>
         <td>
           <span id="lblocknum">Coming soon...</span>
         </td>
       </tr>
       <tr>
-        <td className="field">Raw Data</td>
+        <StyledTD>Raw Data</StyledTD>
         <td>
           <span id="lrawgettx">
-            <a href={rawAssetURL}>Click here for raw info</a>
+            <StyledA href={rawAssetURL}>Click here for raw info</StyledA>
           </span>
         </td>
       </tr>
       <tr>
-        <td className="field">Registration</td>
+        <StyledTD>Registration</StyledTD>
         {registeredMessage}
       </tr>
     </tbody>
@@ -198,16 +214,4 @@ function AssetInfo(asset) {
 
 AssetInfo.propTypes = {};
 
-function mapDispatchToProps(dispatch) {
-  return {
-    changeRoute: url => dispatch(routeActions.push(url)),
-    dispatch,
-  };
-}
-
-const withConnect = connect(
-  null,
-  mapDispatchToProps,
-);
-
-export default compose(withConnect)(AssetInfo);
+export default AssetInfo;

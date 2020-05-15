@@ -9,64 +9,59 @@
  * case YOUR_ACTION_CONSTANT:
  *   return state.set('yourStateVariable', true);
  */
-
-import { fromJS } from 'immutable';
-
+import produce from 'immer';
 import {
   LOAD_TRANSACTIONS,
-  LOAD_TRANSACTIONS_ERROR,
   LOAD_TRANSACTIONS_SUCCESS,
   LOAD_UNCONFIRMED,
   SET_PAGE,
   SET_TRANSACTION_TYPE,
 } from './constants';
 
-// The initial state of the App
-export const initialState = fromJS({
+export const initialState = {
   loading: false,
-  error: false,
   transactions: [],
   pageCount: 0,
   currentPage: 1,
   txType: null,
   unconfirmed: false,
-});
+  stamp: null,
+};
+import getMaxPagesByMedia from 'utils/getMaxPagesByMedia';
 
-function transactionsReducer(state = initialState, action) {
-  switch (action.type) {
-    case LOAD_TRANSACTIONS:
-      return state
-        .set('loading', true)
-        .set('error', false)
-        .set('transactions', [])
-        .set('pageCount', 0)
-        .set('unconfirmed', false);
-    case LOAD_UNCONFIRMED:
-      return state
-        .set('loading', true)
-        .set('error', false)
-        .set('transactions', [])
-        .set('unconfirmed', true);
-    case LOAD_TRANSACTIONS_SUCCESS: {
-      const unconfirmed = state.get('unconfirmed');
-      return state
-        .set('transactions', action.transactions)
-        .set(
-          'pageCount',
-          unconfirmed ? action.transactions.length : action.pages,
-        )
-        .set('loading', false)
-        .set('error', false);
+/* eslint-disable default-case, no-param-reassign */
+const transactionsReducer = (state = initialState, { type, addr, transactions, pages, page, txType } = action) =>
+  produce(state, draft => {
+    switch (type) {
+      case LOAD_TRANSACTIONS:
+        draft.loading = true;
+        draft.transactions = [];
+        draft.pageCount = 0;
+        draft.unconfirmed = false;
+        break;
+      case LOAD_UNCONFIRMED:
+        draft.loading = true;
+        draft.transactions = [];
+        draft.pageCount = 0;
+        draft.currentPage = 1;
+        draft.unconfirmed = true;
+        break;
+      case LOAD_TRANSACTIONS_SUCCESS: {
+        const maxPagesByMedia = getMaxPagesByMedia();
+
+        draft.transactions = addr ? transactions.filter(tx => !!tx.confirmations) : transactions;
+        draft.pageCount = state.unconfirmed ? Math.ceil(transactions.length / maxPagesByMedia) : pages;
+        draft.loading = false;
+        draft.stamp = Date.now();
+        break;
+      }
+      case SET_PAGE:
+        draft.currentPage = Number(page);
+        break;
+      case SET_TRANSACTION_TYPE:
+        draft.txType = txType;
+        break;
     }
-    case LOAD_TRANSACTIONS_ERROR:
-      return state.set('error', action.error).set('loading', false);
-    case SET_PAGE:
-      return state.set('currentPage', action.page);
-    case SET_TRANSACTION_TYPE:
-      return state.set('txType', action.txType);
-    default:
-      return state;
-  }
-}
+  });
 
 export default transactionsReducer;

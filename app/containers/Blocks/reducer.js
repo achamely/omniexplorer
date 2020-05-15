@@ -10,53 +10,49 @@
  *   return state.set('yourStateVariable', true);
  */
 
-import { fromJS } from 'immutable';
 import orderBy from 'lodash/orderBy';
 
+import produce from 'immer';
 import {
-  LOAD_BLOCKS,
-  LOAD_BLOCKS_ERROR,
-  LOAD_BLOCKS_SUCCESS,
   DISABLE_BLOCKS_LOADING,
+  LOAD_BLOCKS,
+  LOAD_BLOCKS_SUCCESS,
 } from './constants';
 
-// The initial state of the App
-export const initialState = fromJS({
+export const initialState = {
   loading: true,
   appendBlocks: false,
-  error: false,
   blocks: [],
   pageCount: 0,
   previousBlock: '',
   latest: -1,
   txType: null,
-});
+};
 
-function blocksReducer(state = initialState, action) {
-  switch (action.type) {
-    case DISABLE_BLOCKS_LOADING:
-      return state.set('loading', false);
-    case LOAD_BLOCKS:
-      return state.set('loading', true).set('error', false);
-    case LOAD_BLOCKS_SUCCESS: {
-      const hasBlocks = state.get('blocks').length > 0;
-      const blockValues = action.blocks.blocks;
-      const blocks = (hasBlocks && state.get('appendBlocks')
-        ? state.get('blocks')
-        : []
-      ).concat(blockValues);
-      return state
-        .set('latest', action.blocks.latest)
-        .set('blocks', orderBy(blocks, 'block', 'desc'))
-        .set('loading', false)
-        .set('error', false)
-        .set('previousBlock', blocks.length ? blockValues[0].block - 1 : null);
+/* eslint-disable default-case, no-param-reassign */
+const blocksReducer = (state = initialState, action) =>
+  produce(state, draft => {
+    switch (action.type) {
+      case DISABLE_BLOCKS_LOADING:
+        draft.loading = false;
+        break;
+      case LOAD_BLOCKS:
+        draft.loading = true;
+        break;
+      case LOAD_BLOCKS_SUCCESS: {
+        const hasBlocks = state.blocks.length > 0;
+        const blockValues = action.blocks.blocks;
+        const blocks = (hasBlocks && state.appendBlocks
+          ? state.blocks
+          : []
+        ).concat(blockValues);
+        draft.latest = action.blocks.latest;
+        draft.blocks = orderBy(blocks, 'block', 'desc');
+        draft.loading = false;
+        draft.previousBlock = blocks.length ? blockValues[0].block - 1 : null;
+        break;
+      }
     }
-    case LOAD_BLOCKS_ERROR:
-      return state.set('error', action.error).set('loading', false);
-    default:
-      return state;
-  }
-}
+  });
 
 export default blocksReducer;

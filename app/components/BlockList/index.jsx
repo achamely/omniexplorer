@@ -10,16 +10,19 @@ import styled from 'styled-components';
 import { Table, UncontrolledTooltip } from 'reactstrap';
 
 import { FormattedMessage } from 'react-intl';
-import { routeActions } from 'redux-simple-router';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
-import { Link } from 'react-router-dom';
+import { createStructuredSelector } from 'reselect';
 
+import { startFetch } from 'components/Token/actions';
 import AssetLogo from 'components/AssetLogo';
+import AssetLink from 'components/AssetLink';
 import { FormattedUnixDateTime } from 'components/FormattedDateTime';
 import ColoredHash from 'components/ColoredHash';
 import SanitizedFormattedNumber from 'components/SanitizedFormattedNumber';
-import InformationIcon from 'react-icons/lib/io/informatcircled';
+import StyledLink from 'components/StyledLink';
+import InfoCircleIcon from 'components/InfoCircleIcon';
+
 import messages from './messages';
 
 const StyledTR = styled.tr`
@@ -32,6 +35,21 @@ const StyledTable = styled(Table)`
 `;
 
 class BlockList extends React.PureComponent {
+  constructor(props) {
+    super(props);
+
+    const { blocks } = this.props;
+    this.getDistinctTokensFromBlockList(blocks);
+  }
+
+  getDistinctTokensFromBlockList(blocks) {
+    const properties = Object.values(blocks)
+      .map(block => Object.keys(block.value.details))
+      .flat();
+    const distincts = [...new Set(properties)];
+    return distincts;
+  }
+
   // eslint-disable-line react/prefer-stateless-function
   render() {
     const getItemKey = (item, idx) => item.timestamp.toString().concat(idx);
@@ -91,7 +109,8 @@ class BlockList extends React.PureComponent {
           <div style={{ padding: '0.5rem 1rem' }} className="text-left">
             {Object.keys(block.value.details).map((prop, idx) => (
               <span key={`prop${prop}${idx}`}>
-                #{prop}: $<SanitizedFormattedNumber
+                #{prop}: $
+                <SanitizedFormattedNumber
                   value={block.value.details[prop].value_usd_rounded}
                 />
                 <br />
@@ -105,26 +124,22 @@ class BlockList extends React.PureComponent {
 
     const getOmniTxLogos = block => {
       const logos = Object.keys(block.value.details).map((prop, idx) => {
-        const id = `id${block.block}${prop}`;
+        const key = `id${block.block}${prop}`;
         const asset = block.value.details[prop];
+
         return (
-          <Link
-            key={id}
-            to={{
-              pathname: `/asset/${prop}`,
-              state: { state: this.props.state },
-            }}
-          >
+          <AssetLink key={key} asset={prop} state={this.props.state}>
             <AssetLogo
               asset={asset}
               prop={prop}
-              id={id}
+              style={{ width: '2rem', height: '2rem' }}
             />
-          </Link>
+          </AssetLink>
         );
       });
       return logos;
     };
+
     return (
       <StyledTable responsive striped hover>
         <thead>
@@ -137,11 +152,7 @@ class BlockList extends React.PureComponent {
             </th>
             <th className="text-right">
               <FormattedMessage {...messages.columns.txcount} />
-              <InformationIcon
-                color="gray"
-                className="ml-1"
-                id="blockListTransactionCount"
-              />
+              <InfoCircleIcon id="blockListTransactionCount" />
               <UncontrolledTooltip
                 placement="right-end"
                 target="blockListTransactionCount"
@@ -151,11 +162,7 @@ class BlockList extends React.PureComponent {
             </th>
             <th className="text-right">
               <FormattedMessage {...messages.columns.usdvalue} />
-              <InformationIcon
-                color="gray"
-                className="ml-1"
-                id="blockListUSDValue"
-              />
+              <InfoCircleIcon id="blockListUSDValue" />
               <UncontrolledTooltip
                 placement="right-end"
                 target="blockListUSDValue"
@@ -172,21 +179,29 @@ class BlockList extends React.PureComponent {
           {this.props.blocks.map((block, idx) => (
             <StyledTR key={getItemKey(block, idx)}>
               <td>
-                <Link
+                <StyledLink
                   to={{
                     pathname: `/block/${block.block}`,
                     state: { state: this.props.state },
                   }}
                 >
                   {block.block}
-                </Link>
+                </StyledLink>
               </td>
               <td className="text-center">
                 <FormattedUnixDateTime datetime={block.timestamp} />
               </td>
               <td className="text-right">
                 {getOmniTxLogos(block)}
-                <div style={{width:'3rem', display: 'inline-block'}} id={`omnitxcount${idx}`}>{block.omni_tx_count}</div>
+                <div
+                  style={{
+                    width: '3rem',
+                    display: 'inline-block',
+                  }}
+                  id={`omnitxcount${idx}`}
+                >
+                  {block.omni_tx_count}
+                </div>
                 <UncontrolledTooltip
                   placement="right-end"
                   target={`omnitxcount${idx}`}
@@ -209,14 +224,14 @@ class BlockList extends React.PureComponent {
                 </UncontrolledTooltip>
               </td>
               <td className="text-center">
-                <Link
+                <StyledLink
                   to={{
                     pathname: `/block/${block.block}`,
                     state: { state: this.props.state },
                   }}
                 >
                   <ColoredHash hash={block.block_hash} />
-                </Link>
+                </StyledLink>
               </td>
             </StyledTR>
           ))}
@@ -228,18 +243,22 @@ class BlockList extends React.PureComponent {
 
 BlockList.propTypes = {
   blocks: PropTypes.array.isRequired,
-  changeRoute: PropTypes.func.isRequired,
+  getProperty: PropTypes.func.isRequired,
 };
 
 function mapDispatchToProps(dispatch) {
   return {
-    changeRoute: url => dispatch(routeActions.push(url)),
+    getProperty: propertyId => dispatch(startFetch(propertyId)),
     dispatch,
   };
 }
 
+const mapStateToProps = createStructuredSelector({
+  // properties: state => makeSelectProperty(state),
+});
+
 const withConnect = connect(
-  null,
+  mapStateToProps,
   mapDispatchToProps,
 );
 

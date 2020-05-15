@@ -17,6 +17,10 @@ export default (id, propertyinfo = {}) => {
         logo = require('images/tokenreplaced.png');
       } else if (flags.registered) {
         logo = require(`images/token${id}.png`);
+      } else if (flags.invalid) {
+        logo = require(`images/token${id}.png`);
+      } else {
+        logo = require('images/tokendefault.png');
       }
     } else {
       logo = require(`images/token${id}.png`);

@@ -3,38 +3,31 @@
  * BlockDetail reducer
  *
  */
-
-import { fromJS } from 'immutable';
-
-import { LOAD_BLOCK, LOAD_BLOCK_SUCCESS, LOAD_BLOCK_ERROR } from './constants';
+import produce from 'immer';
+import { LOAD_BLOCK, LOAD_BLOCK_SUCCESS } from './constants';
 
 const initialBlock = {
   transactions: [],
 };
 
-export const initialState = fromJS({
+export const initialState = {
   loading: true,
-  error: false,
   block: initialBlock,
-});
+};
 
-function blockDetailReducer(state = initialState, action) {
-  switch (action.type) {
-    case LOAD_BLOCK:
-      return state
-        .set('loading', true)
-        .set('error', false)
-        .set('block', initialBlock);
-    case LOAD_BLOCK_SUCCESS:
-      return state
-        .set('block', action.block)
-        .set('error', false)
-        .set('loading', false);
-    case LOAD_BLOCK_ERROR:
-      return state.set('error', action.error).set('loading', false);
-    default:
-      return state;
-  }
-}
+/* eslint-disable default-case, no-param-reassign */
+const blockDetailReducer = (state = initialState, action) =>
+  produce(state, draft => {
+    switch (action.type) {
+      case LOAD_BLOCK:
+        draft.loading = true;
+        draft.block = initialBlock;
+        break;
+      case LOAD_BLOCK_SUCCESS:
+        draft.block = action.block;
+        draft.loading = false;
+        break;
+    }
+  });
 
 export default blockDetailReducer;

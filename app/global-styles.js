@@ -1,7 +1,10 @@
-import { injectGlobal } from 'styled-components';
+import { createGlobalStyle } from 'styled-components';
 
-/* eslint no-unused-expressions: 0 no-tabs: 0 */
-injectGlobal`
+const GlobalStyle = createGlobalStyle`
+  * {
+    outline: none;
+  }
+  
   html,
   body {
     height: 100%;
@@ -12,7 +15,7 @@ injectGlobal`
 
   body.fontLoaded {
     font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-   
+    font-size: 12px;
   }
 
   #app {
@@ -45,7 +48,17 @@ injectGlobal`
     -o-transition: color 100ms ease-in-out;
     -ms-transition: color 100ms ease-in-out;
     -moz-transition: color 100ms ease-in-out;
-    -webkit-transition: color 100ms ease-in-out
+    -webkit-transition: color 100ms ease-in-out;
+  }
+  
+  a:link,
+  a:visited,
+  a:hover,
+  a:active {
+    text-decoration: none;
+    &:not(.btn){
+      background-color: transparent;
+    }
   }
   
   .table td, .table th {
@@ -72,3 +85,5 @@ injectGlobal`
   	padding-left: 0.5rem;
   }
 `;
+
+export default GlobalStyle;

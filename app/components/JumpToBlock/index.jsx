@@ -4,16 +4,16 @@
  *
  */
 
-import React from 'react';
-import PropTypes from 'prop-types';
-import { compose } from 'redux';
-import { connect } from 'react-redux';
-import { routeActions } from 'redux-simple-router';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import SearchIcon from 'react-icons/lib/io/search';
+import { connect } from 'react-redux';
 
-import messages from './messages';
+import { Search } from '@styled-icons/fa-solid/Search';
+
 import { Tooltip } from 'reactstrap';
+import { compose } from 'redux';
+import history from 'utils/history';
+import messages from './messages';
 
 const Input = styled.input.attrs({
   type: 'number',
@@ -23,85 +23,79 @@ const Input = styled.input.attrs({
   appearance: none !important;
 `;
 const Wrapper = styled.div.attrs({
-  className: 'input-group d-flex justify-content-end align-items-center',
+  className:
+    'input-group d-flex justify-content-center justify-content-md-end align-items-center',
 })`
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 14px;
 `;
 
-class JumpToBlock extends React.PureComponent {
-  // eslint-disable-line react/prefer-stateless-function
-  constructor(props) {
-    super(props);
-    this.state = {
-      blockToJump: '',
-      tooltipOpen: false,
+export function JumpToBlock(props) {
+  const [blockToJump, setBlockToJump] = useState('');
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
+  const timerToTooltipOpen = useRef(false);
+  useEffect(() => {
+    if (tooltipOpen) {
+      timerToTooltipOpen.current = setTimeout(
+        () => setTooltipOpen(false),
+        1500,
+      );
+    }
+
+    return () => {
+      clearTimeout(timerToTooltipOpen.current);
     };
-  }
-  componentWillUnmount(){
-    clearTimeout(this.idTimeout);
-  }
+  }, [tooltipOpen]);
 
-  isValid(value){
-    return this.props.onValidate && value && this.props.onValidate(value);
-  }
+  const isValid = value => props.onValidate && value && props.onValidate(value);
 
-  handleJumpToBlock(e) {
-    this.props.changeRoute(`/block/${this.state.blockToJump.trim()}`);
-    this.setState({ blockToJump: '' });
-  }
+  const handleJumpToBlock = e => {
+    // setBlockToJump(blockToJump.trim());
+    history.push(`/block/${blockToJump}`);
+  };
 
-  handleKeyUp(e) {
+  const handleKeyUp = e => {
     const { value } = e.target;
     if (e.keyCode === 13 && value) {
-      if (this.isValid(value)) {
-        this.handleJumpToBlock(e);
+      if (isValid(value)) {
+        handleJumpToBlock(e);
       } else {
-        this.setState({ tooltipOpen: true });
-        this.idTimeout = setTimeout(() => this.setState({ tooltipOpen: false }), 1500);
+        setTooltipOpen(true);
       }
     }
-  }
-
-  render() {
-    return (
-      <Wrapper className="jump-to-block-form">
-        <span className="d-none d-sm-inline">Jump to Block:&nbsp;</span>
-        <Input
-          id="jump-to-block"
-          style={{ maxWidth: '9rem' }}
-          className="form-control jump-to-block-input"
-          value={this.state.blockToJump}
-          onInput={e => this.setState({ blockToJump: e.target.value })}
-          onKeyUp={e => this.handleKeyUp(e)}
-        />
-        <SearchIcon
-          className="jump-to-block-icon"
-          size={24}
-          onClick={e => this.handleJumpToBlock(e)}
-        />
-        <Tooltip
-          hideArrow
-          isOpen={this.state.tooltipOpen}
-          target="jump-to-block"
-        >
-          Requested block is invalid
-        </Tooltip>
-      </Wrapper>
-    );
-  }
-}
-
-JumpToBlock.propTypes = {
-  changeRoute: PropTypes.func,
-};
-
-function mapDispatchToProps(dispatch) {
-  return {
-    changeRoute: url => dispatch(routeActions.push(url)),
-    dispatch,
   };
+
+  return (
+    <Wrapper className="jump-to-block-form">
+      <span className="d-none d-sm-inline">Jump to Block:&nbsp;</span>
+      <Input
+        id="jump-to-block"
+        style={{ maxWidth: '9rem' }}
+        className="form-control jump-to-block-input"
+        onInput={e => setBlockToJump(e.target.value)}
+        onKeyUp={e => handleKeyUp(e)}
+      />
+      <Search
+        className="jump-to-block-icon ml-1"
+        size={21}
+        onClick={e => handleJumpToBlock(e)}
+      />
+      <Tooltip hideArrow isOpen={tooltipOpen} target="jump-to-block">
+        Requested block is invalid
+      </Tooltip>
+    </Wrapper>
+  );
+  // }
 }
+
+JumpToBlock.propTypes = {};
+
+const mapDispatchToProps = dispatch => ({
+  push: path => {
+    dispatch(history.push(path));
+  },
+});
 
 const withConnect = connect(
   null,
